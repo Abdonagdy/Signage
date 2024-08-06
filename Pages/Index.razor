@@ -1,0 +1,65 @@
+﻿@page "/"
+@using MizeSignage.ViewModels
+@inject HttpClient httpClient
+@if (!string.IsNullOrEmpty(model.SignageUrl))
+{
+    <img src="@imageFullPath" width="100%" height="100%" />
+
+}
+@*else
+{
+    <img src="images/1.jpg" width="100%" height="100%" />
+}*@
+@code {
+    private string imageFullPath = "";
+    private List<SignageViewModel> signagesList = new List<SignageViewModel>();
+    private SignageViewModel model = new SignageViewModel();
+    private int currentIndex = 0; // Track the current index in the list of signages
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FetchSignages();
+        await ShowSignages();
+    }
+
+    private async Task FetchSignages()
+    {
+        try
+        {
+            signagesList = await httpClient.GetFromJsonAsync<List<SignageViewModel>>("https://mizeapi.mize.com.sa/api/Signage/signageList");
+            
+        }
+        catch (Exception ex)
+        {
+            // Handle exception
+            Console.WriteLine("Error fetching signages: " + ex.Message);
+        }
+    }
+
+    private async Task ShowSignages()
+    {
+        while (true) // Run indefinitely
+        {
+            foreach (var sig in signagesList)
+            {
+                model = sig;
+                if (!string.IsNullOrEmpty(model.SignageUrl))
+                {
+                    imageFullPath = model.SignageUrl;
+       
+                }
+                else
+                {
+                    // Set a default image or handle the empty URL scenario
+                    // Example: imageFullPath = "default-image.jpg";
+                    // Or skip this iteration
+                    continue;
+                }
+                StateHasChanged();
+                await Task.Delay(int.Parse(model.Duration.ToString()) * 1000);
+            }
+            // Reset index when reaching the end of the list
+            currentIndex = 0;
+        }
+    }
+}
